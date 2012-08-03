@@ -299,11 +299,14 @@ class SchemaValidator(object):
         if len(remaining) > 0:
             self._validate(remaining, {'items': additionalItems})
 
-    def validate_additionalProperties(self, x, fieldname, schema,
-                                      additionalProperties=None):
+    def validate_additionalProperties(self, x, fieldname, schema, additionalProperties=None):
         '''
         Validates additional properties of a JSON object that were not
-        specifically defined by the properties property
+        specifically defined by the properties property OR the patternProperties
+        object.
+
+        By default, the validator behaves like True was passed to additional,
+        which means that we mostly want to use it with False or a schema.
         '''
 
         # Shouldn't be validating additionalProperties on non-dicts
@@ -318,23 +321,37 @@ class SchemaValidator(object):
 
         value = x.get(fieldname)
         if isinstance(additionalProperties, (dict, bool)):
-            properties = schema.get("properties")
+            properties = schema.get("properties", [])
+            patternProperties = schema.get('patternProperties', [])
             if properties is None:
                 properties = {}
             if value is None:
                 value = {}
             for eachProperty in value:
-                if eachProperty not in properties:
-                    # If additionalProperties is the boolean value False
-                    # then we don't accept any additional properties.
-                    if (isinstance(additionalProperties, bool) and
-                        not additionalProperties):
-                        self._error("additional property '%(prop)s' "
-                                    "not defined by 'properties' are not "
-                                    "allowed in field '%(fieldname)s'",
-                                    None, fieldname, prop=eachProperty)
-                    self.__validate(eachProperty, value,
-                                    additionalProperties)
+                if eachProperty in properties:
+                    continue
+
+                # Check if the property matches a patternProperty
+                matched = False
+                for pattern in patternProperties:
+                    if re.match(pattern, eachProperty):
+                        matched = True
+                        break
+                if matched:
+                    continue
+
+                # If additionalProperties is the boolean value False
+                # then we don't accept any additional properties.
+                if (isinstance(additionalProperties, bool) and not additionalProperties):
+                    raise
+                    self._error("additional property %(value)s not defined by "
+                                "'properties' nor matched by 'patternProperties' are not allowed in field "
+                                "'%(fieldname)s'",
+                                eachProperty, fieldname)
+
+                # If it's an object, then we try to validate the value
+                # on the schema.
+                self.validate(value, additionalProperties)
         else:
             raise SchemaError("additionalProperties schema definition for "
                               "field '%s' is not an object" % fieldname)
@@ -519,6 +536,13 @@ class SchemaValidator(object):
             self._error("Value %(value)r field '%(fieldname)s' is not "
                         "divisible by '%(divisibleBy)s'.",
                         x.get(fieldname), fieldname, divisibleBy=divisibleBy)
+
+    def validate_extends(self, x, fieldname, schema, extends=None):
+        ''' Kind of an inheritance for schema validation : the
+            field is to be checked against the provided schema
+            in the extends property.
+        '''
+        self.validate_type(x, fieldname, schema, extends)
 
     def validate_disallow(self, x, fieldname, schema, disallow=None):
         '''
