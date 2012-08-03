@@ -590,7 +590,13 @@ class SchemaValidator(object):
             if 'blank' not in schema:
                 newschema['blank'] = self.blank_by_default
 
+            if 'type' in schema:
+                self.validate_type(data, fieldname, schema, newschema.get('type'))
+
             for schemaprop in newschema:
+                if schemaprop == 'type':
+                    # We already checked it first above.
+                    continue
 
                 validatorname = "validate_" + schemaprop
 
