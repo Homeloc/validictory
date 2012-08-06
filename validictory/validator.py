@@ -412,7 +412,6 @@ class SchemaValidator(object):
                 # then we don't accept any additional properties.
                 if (isinstance(additionalProperties, bool) and not additionalProperties):
                     self._error('forbidden-property', eachProperty)
-                    return
                 else:
                     # If it's an object, then we try to validate the value
                     # on the schema.
