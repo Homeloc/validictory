@@ -274,18 +274,14 @@ class SchemaValidator(object):
                         return
                     else:
                         for itemIndex in range(len(items)):
-                            # self.push_error_stack()
                             self.__validate(itemIndex, value, items[itemIndex])
-                            return
                 elif isinstance(items, dict):
                     for i, eachItem in enumerate(value):
                         self.push_error_stack()
                         self.__validate(i, value, items)
                         errs = self.pop_error_stack()
-                        if len(errs) > 1:
-                            for e in errs:
-                                self.error_list.append(e)
-                            return
+                        if errs:
+                            self.error_list += errs
                 else:
                     raise SchemaError("Properties definition of field '%s' is "
                                       "not a list or an object" % fieldname)
@@ -615,7 +611,7 @@ class SchemaValidator(object):
                 if errs:
                     # do not keep validating an object if its type was not correct !
                     self.error_list += errs
-                    return
+                    return data
 
             for schemaprop in newschema:
                 validatorname = "validate_" + schemaprop
