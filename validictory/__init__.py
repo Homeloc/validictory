@@ -3,7 +3,7 @@
 from validictory.validator import SchemaValidator, ValidationError, SchemaError
 
 __all__ = ['validate', 'SchemaValidator', 'ValidationError', 'SchemaError']
-__version__ = '0.9.4-homeloc'
+__version__ = '0.9.5-homeloc'
 
 
 def validate(data, schema, validator_cls=SchemaValidator,
