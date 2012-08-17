@@ -5,7 +5,6 @@ import socket
 from functools import wraps
 
 from datetime import datetime
-import warnings
 from collections import Mapping, Container
 
 if sys.version_info[0] == 3:
@@ -122,23 +121,27 @@ class SchemaValidator(object):
         ``required`` schema attribute False by default.
     :param blank_by_default: defaults to False, set to True to make ``blank``
         schema attribute True by default.
+    :param ignore_required: defaults to False, set to True to skip the ``required``
+        tests, to allow for partial validation of an object.
     '''
 
     __metaclass__ = MetaSchemaValidator
 
     @property
     def current_field_name(self):
-        current = u'.'.join(self.current_field[1:]) # we remove the first _data.
+        current = u'.'.join(self.current_field[1:])  # we remove the first _data.
         return current if current else None
 
-    def __init__(self, format_validators=None, required_by_default=True,
-                 blank_by_default=False):
+    def __init__(self, format_validators=None, required_by_default=False,
+                 blank_by_default=False, ignore_required=False):
         if format_validators is None:
             format_validators = DEFAULT_FORMAT_VALIDATORS.copy()
 
         self._format_validators = format_validators
         self.required_by_default = required_by_default
         self.blank_by_default = blank_by_default
+        self.ignore_required = ignore_required
+
         self.error_list = []
         self.error_stack = []
         self.current_field = []
@@ -290,6 +293,9 @@ class SchemaValidator(object):
         '''
         Validates that the given field is present if required is True
         '''
+        if self.ignore_required:
+            return
+
         # Make sure the field is present
         if fieldname not in x and required:
             self._error('missing-required')
@@ -622,4 +628,25 @@ class SchemaValidator(object):
 
         return data
 
-__all__ = ['SchemaValidator']
+
+def validate(data, schema, validator_cls=SchemaValidator,
+             format_validators=None, required_by_default=False,
+             blank_by_default=False, ignore_required=False):
+    '''
+    Validates a parsed json document against the provided schema. If errors
+    are found, a :class:`ValidationError` is raised, the list of errors in its
+    message.
+
+    If there is an issue in the schema a :class:`SchemaError` will be raised.
+
+    :param data: python data to validate
+    :param schema: python dictionary representing the schema (see
+        `schema format`_)
+    :param validator_cls: optional validator class (default is
+        :class:`SchemaValidator`)
+    :param format_validators: optional dictionary of custom format validators
+    '''
+    v = validator_cls(format_validators, required_by_default, blank_by_default, ignore_required)
+    return v.validate(data, schema)
+
+__all__ = ['SchemaValidator', 'validate']
