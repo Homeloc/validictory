@@ -241,8 +241,12 @@ class _String(SchemaElement):
         cp['blank'] = True
         return cp
 
+
+class _Any(SchemaElement):
+    type = 'any'
+
 # Any is meant to be used as is, without instanciating it.
-Any = {'type': 'any'}
+Any = _Any()
 Object = _Object()
 StrictObject = _StrictObject()
 Array = _Array()

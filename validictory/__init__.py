@@ -12,7 +12,7 @@ __all__ = ['validate', 'coerce', 'SchemaValidator', 'ValidationError',
     'Either', 'Datetime', 'StrictObject', 'Either',
     'validate'
 ]
-__version__ = '0.9.7-homeloc'
+__version__ = '0.9.8-homeloc'
 
 
 if __name__ == '__main__':
