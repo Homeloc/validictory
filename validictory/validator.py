@@ -27,6 +27,11 @@ class ValidationError(ValueError):
     :class:`ValueError`)
     """
 
+    def __init__(self, error_list):
+        message = repr(error_list)
+        ValueError.__init__(self, message)
+        self.error_list = error_list
+
 
 def _generate_datetime_validator(format_option, dateformat_string):
     def validate_format_datetime(validator, fieldname, value, format_option):
